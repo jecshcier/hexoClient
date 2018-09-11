@@ -21,6 +21,7 @@ const download_process = path.resolve(__dirname, './download.js')
 const upload_process = path.resolve(__dirname, './upload.js')
 const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
 const QRCode = require('qrcode')
+const util = require('util');
 
 
 const appEvent = {
@@ -302,6 +303,27 @@ const appEvent = {
 
     })
 
+    // 读取文件内容
+    ipc.on('readFileContent', async function(event, data) {
+      let info = {
+        flag: false,
+        message: '',
+        data: null
+      }
+      let fileUrl = data.fileUrl
+      let readFile = util.promisify(fs.readFile)
+      let content
+      try {
+        content = await readFile(fileUrl, 'utf8')
+        info.flag = true
+        info.data = content
+      } catch (e) {
+        info.message = e
+        event.sender.send(data.callback, JSON.stringify(info));
+      }
+      event.sender.send(data.callback, JSON.stringify(info));
+    })
+
     //打开文件
     ipc.on('openFile', (event, data) => {
       let info = {
@@ -421,6 +443,8 @@ const appEvent = {
       }
       // 设置下载路径
     })
+
+
 
     // 上传文件监听
     ipc.on('uploadFiles', function(event, data) {
