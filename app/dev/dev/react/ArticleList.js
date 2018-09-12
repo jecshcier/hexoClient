@@ -5,37 +5,21 @@ import {Tree, Button, Radio, Icon, Modal, Input} from 'antd';
 class ArticleList extends React.Component{
   constructor(props){
     super(props)
-    this.state = {
-      hexoRoot:window.localStorage.hexoRoot
-    }
   }
-  editArticle = (e)=>{
+  changeArticle = (e)=>{
     this.props.changeCurrentArticle(e.target.getAttribute('data-path'))
   }
 
   componentDidMount(){
-    if(this.state.hexoRoot){
-      app.send('getFolderFiles',{
-        callback:'getFolderFilesCallback',
-        dirPath:this.state.hexoRoot +　'/source/_posts'
-      })
-      app.once('getFolderFilesCallback',(event, data)=>{
-        data = JSON.parse(data)
-        console.log(JSON.stringify(data.data))
-        if (data.flag){
-          console.log(data.data)
-          this.setState({
-            articleArr:data.data
-          })
-        }
-      })
-    }
+    this.props.changeArticleArr(this.props.rootDir)
   }
 
   render(){
+    console.log("articleList ----------------------------")
+    console.log(this.props.articleArr)
     return (<ul className="articleList">
-      {this.state.articleArr ? Object.values(this.state.articleArr).map((el,index)=>{
-        return <li key={index} data-path={el.path} onClick={this.editArticle}>{el.fileName}</li>
+      {this.props.articleArr ? Object.values(this.props.articleArr).map((el,index)=>{
+        return <li key={index} data-path={el.path} onClick={this.changeArticle}>{el.fileName}</li>
       }):<li>暂无文章</li>}
     </ul>)
   }

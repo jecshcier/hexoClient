@@ -13,8 +13,34 @@ class Main extends React.Component {
     super(props);
     this.state = {
       current: null,
-      content: ''
+      content: '',
+      hexoRoot: window.localStorage.hexoRoot,
+      articleArr: null
     }
+  }
+
+  changeArticleArr = (hexoRoot) => {
+    app.once('getFolderFilesCallback',(event, data)=>{
+      if (data.flag){
+        console.log(data.data)
+        this.setState({
+          articleArr:data.data
+        })
+      }
+      else{
+        if(hexoRoot){
+          alert("请选择正确的hexo博客路径！")
+          this.setState({
+            hexoRoot:'',
+            articleArr:null
+          })
+        }
+      }
+    })
+    app.send('getFolderFiles',{
+      callback:'getFolderFilesCallback',
+      dirPath:hexoRoot +　'/source/_posts'
+    })
   }
 
   changeCurrentArticle = (article) => {
@@ -36,23 +62,28 @@ class Main extends React.Component {
   }
 
   changeRootDir = (hexoRoot) => {
+    console.log(hexoRoot)
     this.setState({
       hexoRoot: hexoRoot
     })
+    window.localStorage.hexoRoot = hexoRoot
+    this.changeArticleArr(hexoRoot)
   }
 
-  changeEditorContent = (content)=>{
+  changeEditorContent = (editor, data, value) => {
     this.setState({
-      content:content
+      content: value
     })
   }
 
   render() {
     return [
-      <ToolBar key="toolBar" rootDir={this.changeRootDir}/>,
+      <ToolBar key="toolBar" rootDir={this.state.hexoRoot} changeRootDir={this.changeRootDir}/>,
       <div className="user-view" key="userView">
-        <ArticleList key="list" changeCurrentArticle={this.changeCurrentArticle}/>
-        <Editor key="edit" name={this.state.current} content={this.state.content} changeContent={this.changeEditorContent}/>
+        <ArticleList key="list" rootDir={this.state.hexoRoot} changeCurrentArticle={this.changeCurrentArticle}
+                     articleArr={this.state.articleArr} changeArticleArr={this.changeArticleArr}/>
+        <Editor key="edit" name={this.state.current} content={this.state.content}
+                changeContent={this.changeEditorContent}/>
       </div>
     ]
   }

@@ -266,17 +266,24 @@ const appEvent = {
       }
       fs.readdir(dirPath, function(err, files) {
         if (err) {
-          info.message = "错误！==>" + err
-          event.sender.send(data.callback, JSON.stringify(info));
+          info.message = err
+          event.sender.send(data.callback, info);
         }
         let filesArr = []
+        if (!files) {
+          info.flag = true
+          info.message = "成功！"
+          info.data = filesArr
+          event.sender.send(data.callback, info);
+          return false;
+        }
         files.forEach(function(filename, index) {
           let truePath = path.join(dirPath, filename);
           fs.stat(truePath, function(err, stats) {
             if (err) {
+              info.message = err
+              event.sender.send(data.callback, info)
               return false
-              info.message = "错误！==>" + err
-              event.sender.send(data.callback, JSON.stringify(info))
             }
             //文件
             if (stats.isFile()) {
@@ -294,7 +301,7 @@ const appEvent = {
               info.message = "成功！"
               info.data = filesArr
               console.log(filesArr)
-              event.sender.send(data.callback, JSON.stringify(info));
+              event.sender.send(data.callback, info);
             }
           });
         });
