@@ -22,6 +22,8 @@ const upload_process = path.resolve(__dirname, './upload.js')
 const downloadPath = path.resolve(__dirname, '../../app/' + config.downloadPath)
 const QRCode = require('qrcode')
 const util = require('util');
+const readdir = util.promisify(fs.readdir)
+const fsStat = util.promisify(fs.stat)
 
 
 const appEvent = {
@@ -257,57 +259,73 @@ const appEvent = {
     })
 
     //获取文件夹下所有文件
-    ipc.on('getFolderFiles', (event, data) => {
+    ipc.on('getFolderFiles', async (event, data) => {
+      console.log("获取文件夹下所有文件")
       let dirPath = data.dirPath
       let info = {
         flag: false,
         message: '',
         data: null
       }
-      fs.readdir(dirPath, function(err, files) {
-        if (err) {
-          info.message = err
-          event.sender.send(data.callback, info);
-        }
+      try {
+        let files = await readdir(dirPath)
         let filesArr = []
-        if (!files) {
-          info.flag = true
-          info.message = "成功！"
-          info.data = filesArr
-          event.sender.send(data.callback, info);
-          return false;
-        }
-        files.forEach(function(filename, index) {
-          let truePath = path.join(dirPath, filename);
-          fs.stat(truePath, function(err, stats) {
-            if (err) {
-              info.message = err
-              event.sender.send(data.callback, info)
-              return false
-            }
-            //文件
-            if (stats.isFile()) {
-              filesArr.push({
-                fileName: filename,
-                path: truePath,
-                stats: stats
-              })
-            } else if (stats.isDirectory()) {
+        await Promise.all(files.map(async (filename, index) => {
+          let truePath = path.join(dirPath, filename)
+          let fileStat = await fsStat(truePath)
+          if (fileStat.isFile()) {
+            filesArr.push({
+              fileName: filename,
+              path: truePath,
+              stats: fileStat
+            })
+          } else if (fileStat.isDirectory()) {
+            // 如果是文件夹的情况
+          }
+        }))
+        info.flag = true
+        info.message = "成功！"
+        info.data = filesArr
+        event.sender.send(data.callback, info)
+      } catch (e) {
+        info.message = err
+        event.sender.send(data.callback, info)
+      }
+    })
 
-            }
-
-            if (index === files.length - 1) {
-              info.flag = true
-              info.message = "成功！"
-              info.data = filesArr
-              console.log(filesArr)
-              event.sender.send(data.callback, info);
-            }
-          });
-        });
-
-      })
-
+    //获取文件夹下所有文件夹
+    ipc.on('getFolders', async (event, data) => {
+      console.log("获取文件夹下所有文件夹")
+      let dirPath = data.dirPath
+      let info = {
+        flag: false,
+        message: '',
+        data: null
+      }
+      try {
+        let files = await readdir(dirPath)
+        let filesArr = []
+        await Promise.all(files.map(async (filename, index) => {
+          let truePath = path.join(dirPath, filename)
+          let fileStat = await fsStat(truePath)
+          if (fileStat.isFile()) {
+            // 如果是文件的情况
+          } else if (fileStat.isDirectory()) {
+            filesArr.push({
+              fileName: filename,
+              path: truePath,
+              stats: fileStat
+            })
+          }
+        }))
+        info.flag = true
+        info.message = "成功！"
+        info.data = filesArr
+        event.sender.send(data.callback, info)
+      } catch (e) {
+        info.message = err
+        event.sender.send(data.callback, info)
+      }
     })
 
     // 读取文件内容
@@ -379,6 +397,45 @@ const appEvent = {
           info.message = "打开成功"
           event.sender.send(data.callback, JSON.stringify(info));
         }
+      })
+    })
+
+    // 写文件
+    ipc.on('createFile', async (event, data) => {
+      let info = {
+        flag: false,
+        message: '',
+        data: null
+      }
+      let url = data.url
+      let content = data.content
+      try {
+        let data = await fs.outputFile(url, content)
+        info.message = "创建成功"
+        info.flag = true
+        event.sender.send(data.callback, info);
+      } catch (err) {
+        info.message = err
+        event.sender.send(data.callback, info);
+      }
+    })
+    // 复制文件
+    ipc.on('copyFile', async (event, data) => {
+      let info = {
+        flag: false,
+        message: '',
+        data: null
+      }
+      let url = data.url
+      let targetUrl = data.targetUrl
+      fs.ensureDir(targetUrl).then((result)=>{
+        return fs.copy(url, targetUrl + '/' + data.name)
+      }).then((result) => {
+        info.message = "复制成功"
+        info.flag = true
+        event.sender.send(data.callback, info);
+      }).catch((err)=>{
+        console.log(err)
       })
     })
 

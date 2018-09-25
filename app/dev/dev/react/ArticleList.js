@@ -7,7 +7,7 @@ class ArticleList extends React.Component{
     super(props)
   }
   changeArticle = (e)=>{
-    this.props.changeCurrentArticle(e.target.getAttribute('data-path'))
+    this.props.changeCurrentArticle(e.target.getAttribute('data-path'),e.target.getAttribute('data-name'))
   }
 
   componentDidMount(){
@@ -19,7 +19,7 @@ class ArticleList extends React.Component{
     console.log(this.props.articleArr)
     return (<ul className="articleList">
       {this.props.articleArr ? Object.values(this.props.articleArr).map((el,index)=>{
-        return <li key={index} data-path={el.path} onClick={this.changeArticle}>{el.fileName}</li>
+        return <li key={index} data-path={el.path} data-name={el.fileName} onClick={this.changeArticle}>{el.fileName}</li>
       }):<li>暂无文章</li>}
     </ul>)
   }

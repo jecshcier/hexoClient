@@ -5,7 +5,7 @@ const webpack = require('webpack')
 module.exports = {
   entry: {
     main: './dev/index.js',
-    vendor: ['react', 'react-dom', 'antd']
+    vendor: ['react', 'react-dom', 'antd', 'lodash', 'moment']
   },
   output: {
     filename: 'js/[name]-[chunkhash].js',
@@ -18,7 +18,7 @@ module.exports = {
       use: {
         loader: 'babel-loader',
         options: {
-          presets: ['react', 'env','es2015'],
+          presets: ['react', 'env', 'es2015'],
           plugins: [
             ["transform-class-properties", {"spec": true}]
           ]

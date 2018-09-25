@@ -20,6 +20,7 @@ class Main extends React.Component {
   }
 
   changeArticleArr = (hexoRoot) => {
+    console.log("================change================")
     app.once('getFolderFilesCallback',(event, data)=>{
       if (data.flag){
         console.log(data.data)
@@ -43,21 +44,24 @@ class Main extends React.Component {
     })
   }
 
-  changeCurrentArticle = (article) => {
-    app.send('readFileContent', {
-      fileUrl: article,
-      callback: 'readFileContentCallback'
-    })
+  changeCurrentArticle = (article,name) => {
+    console.log("===============文章名称================")
+    console.log(name)
     app.once('readFileContentCallback', (event, data) => {
       data = JSON.parse(data)
       if (data.flag) {
         this.setState({
           current: article,
+          currentName:name,
           content: data.data
         })
       } else {
         alert(data.message)
       }
+    })
+    app.send('readFileContent', {
+      fileUrl: article,
+      callback: 'readFileContentCallback'
     })
   }
 
@@ -77,12 +81,13 @@ class Main extends React.Component {
   }
 
   render() {
+    console.log(this.state.hexoRoot)
     return [
-      <ToolBar key="toolBar" rootDir={this.state.hexoRoot} changeRootDir={this.changeRootDir}/>,
+      <ToolBar key="toolBar" rootDir={this.state.hexoRoot} changeRootDir={this.changeRootDir} reloadArticleArr={this.changeArticleArr}/>,
       <div className="user-view" key="userView">
         <ArticleList key="list" rootDir={this.state.hexoRoot} changeCurrentArticle={this.changeCurrentArticle}
                      articleArr={this.state.articleArr} changeArticleArr={this.changeArticleArr}/>
-        <Editor key="edit" name={this.state.current} content={this.state.content}
+        <Editor key="edit" name={this.state.current} article={this.state.currentName} rootDir={this.state.hexoRoot} content={this.state.content}
                 changeContent={this.changeEditorContent}/>
       </div>
     ]

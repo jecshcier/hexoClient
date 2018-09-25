@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import {Tree, Button, Radio, Icon, Modal, Input} from 'antd';
 import AddArticle from './AddArticle'
+import moment from 'moment'
 
 class ToolBar extends React.Component {
   constructor(props) {
@@ -12,10 +13,17 @@ class ToolBar extends React.Component {
   }
 
   addArticle = () => {
-    this.setState({
-      model: 'addA'
-    })
+    if (this.props.rootDir) {
+      this.setState({
+        model: 'addA'
+      })
+    }
+    else {
+      alert("请选择正确的hexo博客路径！")
+      return false
+    }
   }
+
   chooseHexoRoot = () => {
     app.send('chooseDir', {
       callback: 'chooseDirCallback'
@@ -30,16 +38,29 @@ class ToolBar extends React.Component {
     })
   }
 
-  handleOk = (data)=>{
-    console.log(data)
+  handleOk = (data) => {
+    let articleContent = `---\ntitle: ${data.value}\ncategories: ${data.currentSort}\ndate: ${moment().format("YYYY-MM-DD hh:mm:ss")}\ntags: [${data.currentTag}]\nkeywords: [gitment,hexo,next]\n---`
+    app.once('createFileCallback', (event, data) => {
+      if(data.flag){
+        this.props.reloadArticleArr(this.props.rootDir)
+      }
+      else {
+        alert(data.message)
+      }
+    })
+    app.send('createFile', {
+      url: this.props.rootDir + '/source/_posts/' + moment().format('YYYY-MM-DD') + '-' + data.value + '.md',
+      content: articleContent,
+      callback: 'createFileCallback'
+    })
     this.setState({
-      model:null
+      model: null
     })
   }
 
-  closeModal = ()=>{
+  closeModal = () => {
     this.setState({
-      model:null
+      model: null
     })
   }
 
@@ -72,9 +93,10 @@ class ToolBar extends React.Component {
       </span>
       <AddArticle ref="groupModal"
                   onOk={this.handleOk}
+                  hexoRoot={this.props.rootDir}
                   show={(this.state.model === 'addA') ? true : false}
-                  closeModal={this.closeModal} modalName="新增分组"
-                  placeholder="新分组名称" key="modal"/>
+                  closeModal={this.closeModal} modalName="新增文章"
+                  placeholder="文章标题" key="modal"/>
     </div>)
   }
 }
