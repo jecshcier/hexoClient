@@ -6,6 +6,8 @@ import 'antd/lib/modal/style/css'
 import 'antd/lib/input/style/css'
 import 'antd/lib/select/style/css'
 import 'antd/lib/tag/style/css'
+import 'antd/lib/message/style/css'
+
 
 
 const Option = Select.Option

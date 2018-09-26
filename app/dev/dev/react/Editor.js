@@ -1,25 +1,49 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import {Tree, Button, Radio, Icon, Modal, Input} from 'antd';
+import {Tree, Button, Radio, Icon, Modal, Input, message} from 'antd';
 import {Controlled as CodeMirror} from 'react-codemirror2'
 
 import 'codemirror/mode/markdown/markdown.js'
 import 'codemirror/theme/monokai.css'
 import 'codemirror/lib/codemirror.css'
-import moment from "moment";
+
 
 const imgArr = ['png', 'jpg', 'gif', 'jpeg']
 
 class Editor extends React.Component {
   constructor(props) {
     super(props)
+    this.state = {
+      modal: null
+    }
     this.values = ''
+    this.message = '保存成功！'
   }
 
   componentDidMount = () => {
     console.log("============cm=============")
-    console.log(this.cm.replaceSelection)
+    this.values = this.props.content
 
+    console.log(this.props.content)
+    document.addEventListener("paste", (e) => {
+      e.preventDefault();
+      let cbd = e.clipboardData;
+      let item = cbd.items[0];
+      if (item.kind === "file") {
+        let blob = item.getAsFile();
+        console.log(blob);
+        if (!blob) {
+          return false;
+        }
+        window.URL = window.URL || window.webkitURL;
+        let blobUrl = window.URL.createObjectURL(blob);
+        this.setState({
+          modal: 'loadC',
+          clipboardImgUrl: blobUrl,
+          clipboardImg: blob
+        })
+      }
+    })
   }
 
   changeContent = (editor, data, value) => {
@@ -34,18 +58,58 @@ class Editor extends React.Component {
   }
 
   saveArticle = () => {
+    if (this.saveFlag){
+      return message.warning('保存中……请不要重复保存～')
+    }
+    if (!this.props.name) {
+      return message.warning('没有选择文件，不能保存')
+    }
+    this.saveFlag = true
     app.once('createFileCallback', (event, data) => {
+      this.saveFlag = false
       if (data.flag) {
-        alert("保存成功！")
+        message.success('保存成功');
       } else {
-        alert(data.message)
+        message.error(data.message);
       }
     })
     app.send('createFile', {
       url: this.props.name,
-      content: this.values,
+      content: this.props.content,
       callback: 'createFileCallback'
     })
+
+  }
+
+  closeModal = () => {
+    this.setState({
+      modal: null
+    })
+  }
+  loadClipboardImg = () => {
+    this.setState({
+      modal: null
+    })
+    let _this = this
+    console.log(this.state.clipboardImg)
+    let reader = new FileReader()
+    reader.onload = function (evt) {
+      console.log(evt.target.result)
+      app.once('createImageCallback', (event, data) => {
+        if (data.flag) {
+          let url = `${window.localStorage.domain}/images/${_this.props.article}/${data.data}`
+          _this.cm.replaceSelection(`![${data.data}](${url})\n`)
+        } else {
+          message.error("图片储存失败！");
+        }
+      })
+      app.send('createImage', {
+        url: _this.props.rootDir + '/source/images/' + _this.props.article,
+        data: evt.target.result,
+        callback: 'createImageCallback'
+      })
+    }
+    reader.readAsDataURL(this.state.clipboardImg)
   }
 
   render() {
@@ -84,16 +148,17 @@ class Editor extends React.Component {
               pos = pos.toLowerCase()
               if (imgArr.indexOf(pos) !== -1) {
                 console.log(el)
-                app.once('copyFileCallback',(event, data)=>{
-                  if(data.flag){
-                    console.log("==========复制成功=============")
+                app.once('copyFileCallback', (event, data) => {
+                  if (data.flag) {
+                    let url = `${window.localStorage.domain}/images/${this.props.article}/${el.name}`
+                    editor.replaceSelection(`![${el.name}](${url})\n`)
                   }
                 })
-                app.send('copyFile',{
-                  url:el.path,
-                  targetUrl:this.props.rootDir + '/source/images/' + this.props.article,
-                  name:el.name,
-                  callback:'copyFileCallback'
+                app.send('copyFile', {
+                  url: el.path,
+                  targetUrl: this.props.rootDir + '/source/images/' + this.props.article,
+                  name: el.name,
+                  callback: 'copyFileCallback'
                 })
               }
             })
@@ -110,6 +175,14 @@ class Editor extends React.Component {
           <span onClick={this.saveArticle}>保存</span>
         </span>
       </div>
+      <Modal onOk={this.loadClipboardImg}
+             title="插入图片"
+             visible={this.state.modal === 'loadC'}
+             onCancel={this.closeModal}>
+        <div style={{display: 'flex', justifyContent: 'center'}}>
+          <img src={this.state.clipboardImgUrl} alt="" style={{maxWidth: '100%', maxHeight: '300px'}}/>
+        </div>
+      </Modal>
     </div>)
   }
 }

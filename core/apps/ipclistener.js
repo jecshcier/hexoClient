@@ -428,16 +428,43 @@ const appEvent = {
       }
       let url = data.url
       let targetUrl = data.targetUrl
-      fs.ensureDir(targetUrl).then((result)=>{
+      fs.ensureDir(targetUrl).then((result) => {
         return fs.copy(url, targetUrl + '/' + data.name)
       }).then((result) => {
         info.message = "复制成功"
         info.flag = true
         event.sender.send(data.callback, info);
-      }).catch((err)=>{
+      }).catch((err) => {
         console.log(err)
       })
     })
+    // 生成图片
+    ipc.on('createImage', async (event, data) => {
+      let info = {
+        flag: false,
+        message: '',
+        data: null
+      }
+      let imgName = Math.floor(Math.random() * 90000 + 10000) + Date.now() + '.png'
+      let url = data.url + '/' + imgName
+      let imgData = data.data.replace(/^data:image\/\w+;base64,/, "")
+      console.log(data.url)
+      console.log(url)
+
+      try {
+        await fs.ensureDir(data.url)
+        await fs.outputFile(url, new Buffer(imgData, 'base64'))
+        info.message = "创建成功"
+        info.flag = true
+        info.data = imgName
+        event.sender.send(data.callback, info);
+      } catch (err) {
+        console.log(err)
+        info.message = err
+        event.sender.send(data.callback, info);
+      }
+    })
+
 
     // 主动下载文件监听
     ipc.on('downloadFile', function(event, data) {

@@ -8,7 +8,8 @@ class ToolBar extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      model: null
+      model: null,
+      domain: window.localStorage.domain ? window.localStorage.domain : ''
     }
   }
 
@@ -39,9 +40,9 @@ class ToolBar extends React.Component {
   }
 
   handleOk = (data) => {
-    let articleContent = `---\ntitle: ${data.value}\ncategories: ${data.currentSort}\ndate: ${moment().format("YYYY-MM-DD hh:mm:ss")}\ntags: [${data.currentTag}]\nkeywords: [gitment,hexo,next]\n---`
+    let articleContent = `---\ntitle: ${data.value}\ncategories: ${data.currentSort}\ndate: ${moment().format("YYYY-MM-DD HH:mm:ss")}\ntags: [${data.currentTag}]\nkeywords: [gitment,hexo,next]\n---`
     app.once('createFileCallback', (event, data) => {
-      if(data.flag){
+      if (data.flag) {
         this.props.reloadArticleArr(this.props.rootDir)
       }
       else {
@@ -64,12 +65,35 @@ class ToolBar extends React.Component {
     })
   }
 
+  domainConfig = () => {
+    this.setState({
+      model: 'addD'
+    })
+  }
+
+  setDomain = () => {
+    window.localStorage.domain = this.state.domain
+    this.setState({
+      model: null
+    })
+  }
+
+  domainChange = (e) => {
+    this.setState({
+      domain: e.target.value
+    })
+  }
+
   render() {
     return (<div className="tool-bar">
       <div className="tools">
         <span onClick={this.chooseHexoRoot}>
           <i className="fa fa-folder-open-o" aria-hidden="true"></i>
           <span>博客路径</span>
+        </span>
+        <span onClick={this.domainConfig}>
+          <i className="fa fa-link" aria-hidden="true"></i>
+          <span>配置域名</span>
         </span>
         <span onClick={this.addArticle}>
           <i className="fa fa-plus" aria-hidden="true" title="新建文章"></i>
@@ -94,9 +118,15 @@ class ToolBar extends React.Component {
       <AddArticle ref="groupModal"
                   onOk={this.handleOk}
                   hexoRoot={this.props.rootDir}
-                  show={(this.state.model === 'addA') ? true : false}
+                  show={this.state.model === 'addA'}
                   closeModal={this.closeModal} modalName="新增文章"
                   placeholder="文章标题" key="modal"/>
+      <Modal onOk={this.setDomain}
+             title="配置域名"
+             visible={this.state.model === 'addD'}
+             onCancel={this.closeModal}>
+        <Input type="text" onChange={this.domainChange} value={this.state.domain}/>
+      </Modal>
     </div>)
   }
 }
