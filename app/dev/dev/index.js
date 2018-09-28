@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-// import {Tree, Button, Radio, Icon, Modal, Input} from 'antd';
+import {message} from 'antd';
 import ArticleList from './react/ArticleList'
 import Editor from './react/Editor'
 import ToolBar from "./react/ToolBar";
@@ -30,7 +30,7 @@ class Main extends React.Component {
       }
       else{
         if(hexoRoot){
-          alert("请选择正确的hexo博客路径！")
+          message.error("请选择正确的hexo博客路径！")
           this.setState({
             hexoRoot:'',
             articleArr:null

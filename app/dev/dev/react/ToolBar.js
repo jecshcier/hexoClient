@@ -1,27 +1,68 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import {Tree, Button, Radio, Icon, Modal, Input} from 'antd';
+import {Tree, Button, Radio, message, Modal, Input} from 'antd';
 import AddArticle from './AddArticle'
+import EditTags from './editTags'
 import moment from 'moment'
 
 class ToolBar extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      model: null,
-      domain: window.localStorage.domain ? window.localStorage.domain : ''
+      modal: null,
+      domain: window.localStorage.domain ? window.localStorage.domain : '',
+      sortArr: [],
+      tagsArr: [],
+      keywordsArr: []
     }
   }
 
-  addArticle = () => {
-    if (this.props.rootDir) {
-      this.setState({
-        model: 'addA'
-      })
+  loadTags = () => {
+    return new Promise((resolve,reject)=>{
+      if (this.props.rootDir) {
+        app.once('readFileContentCallback', (event, data) => {
+          data = JSON.parse(data)
+          console.log(data)
+          resolve(data)
+        })
+        app.send('readFileContent', {
+          callback: 'readFileContentCallback',
+          fileUrl: this.props.rootDir + '/hexo.config.js'
+        })
+      }
+      else {
+        reject("请选择正确的hexo博客路径！")
+      }
+    })
+
+  }
+
+  addArticle = async () => {
+    let tagsArr = []
+    let sortArr = []
+    let keywordsArr = []
+    let data
+    try {
+      data = await this.loadTags()
+    } catch (err) {
+      return message.error(err)
     }
-    else {
-      alert("请选择正确的hexo博客路径！")
-      return false
+    if (data.flag) {
+      try {
+        let result = JSON.parse(data.data)
+        sortArr = result.categories
+        tagsArr = result.tags
+        keywordsArr = result.keywords
+        this.setState({
+          sortArr: sortArr,
+          tagsArr: tagsArr,
+          keywordsArr: keywordsArr,
+          modal: 'addA'
+        })
+      } catch (err) {
+        console.log(err)
+        message.error("数据解析错误")
+      }
     }
   }
 
@@ -40,7 +81,7 @@ class ToolBar extends React.Component {
   }
 
   handleOk = (data) => {
-    let articleContent = `---\ntitle: ${data.value}\ncategories: ${data.currentSort}\ndate: ${moment().format("YYYY-MM-DD HH:mm:ss")}\ntags: [${data.currentTag}]\nkeywords: [gitment,hexo,next]\n---`
+    let articleContent = `---\ntitle: ${data.value}\ncategories: ${data.currentSort}\ndate: ${moment().format("YYYY-MM-DD HH:mm:ss")}\ntags: [${data.currentTag}]\nkeywords: [${data.currentKeywords}]\n---`
     app.once('createFileCallback', (event, data) => {
       if (data.flag) {
         this.props.reloadArticleArr(this.props.rootDir)
@@ -55,32 +96,87 @@ class ToolBar extends React.Component {
       callback: 'createFileCallback'
     })
     this.setState({
-      model: null
+      modal: null
     })
   }
 
   closeModal = () => {
     this.setState({
-      model: null
+      modal: null
     })
   }
 
   domainConfig = () => {
     this.setState({
-      model: 'addD'
+      modal: 'addD'
     })
   }
+
 
   setDomain = () => {
     window.localStorage.domain = this.state.domain
     this.setState({
-      model: null
+      modal: null
     })
   }
 
   domainChange = (e) => {
     this.setState({
       domain: e.target.value
+    })
+  }
+
+  editTags = async () => {
+    let tagsArr = []
+    let sortArr = []
+    let keywordsArr = []
+    let data
+    try {
+      data = await this.loadTags()
+    } catch (err) {
+      return message.error(err)
+    }
+    if (data.flag) {
+      try {
+        let result = JSON.parse(data.data)
+        sortArr = result.categories
+        tagsArr = result.tags
+        keywordsArr = result.keywords
+        this.setState({
+          sortArr: sortArr,
+          tagsArr: tagsArr,
+          keywordsArr: keywordsArr,
+          modal: 'editT'
+        })
+      } catch (err) {
+        console.log(err)
+        message.error("数据解析错误")
+      }
+    }
+  }
+
+  changeArr=(type,data)=>{
+    switch (type) {
+      case 'sortArr':
+        this.setState({
+          sortArr:data
+        })
+        break
+      case 'tagsArr':
+        this.setState({
+          tagsArr:data
+        })
+        break
+      case 'keywordsArr':
+        this.setState({
+          keywordsArr:data
+        })
+        break
+      default:
+          break
+    }
+    this.setState({
+      type:data
     })
   }
 
@@ -99,11 +195,7 @@ class ToolBar extends React.Component {
           <i className="fa fa-plus" aria-hidden="true" title="新建文章"></i>
           <span>新建文章</span>
         </span>
-        <span>
-          <i className="fa fa-thumb-tack" aria-hidden="true" title="分类管理"></i>
-          <span>分类管理</span>
-        </span>
-        <span>
+        <span onClick={this.editTags}>
           <i className="fa fa-tags" aria-hidden="true" title="标签管理"></i>
           <span>标签管理</span>
         </span>
@@ -118,15 +210,26 @@ class ToolBar extends React.Component {
       <AddArticle ref="groupModal"
                   onOk={this.handleOk}
                   hexoRoot={this.props.rootDir}
-                  show={this.state.model === 'addA'}
+                  show={this.state.modal === 'addA'}
                   closeModal={this.closeModal} modalName="新增文章"
+                  tagsArr={this.state.tagsArr}
+                  sortArr={this.state.sortArr}
+                  keywordsArr={this.state.keywordsArr}
                   placeholder="文章标题" key="modal"/>
       <Modal onOk={this.setDomain}
              title="配置域名"
-             visible={this.state.model === 'addD'}
+             visible={this.state.modal === 'addD'}
              onCancel={this.closeModal}>
         <Input type="text" onChange={this.domainChange} value={this.state.domain}/>
       </Modal>
+      <EditTags hexoRoot={this.props.rootDir}
+                show={this.state.modal === 'editT'}
+                closeModal={this.closeModal} modalName="编辑标签"
+                tagsArr={this.state.tagsArr}
+                sortArr={this.state.sortArr}
+                keywordsArr={this.state.keywordsArr}
+                changeArr={this.changeArr}
+                key="tags_modal"/>
     </div>)
   }
 }

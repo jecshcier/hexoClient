@@ -268,6 +268,7 @@ const appEvent = {
         data: null
       }
       try {
+        console.log('-->',dirPath)
         let files = await readdir(dirPath)
         let filesArr = []
         await Promise.all(files.map(async (filename, index) => {
@@ -287,7 +288,7 @@ const appEvent = {
         info.message = "成功！"
         info.data = filesArr
         event.sender.send(data.callback, info)
-      } catch (e) {
+      } catch (err) {
         info.message = err
         event.sender.send(data.callback, info)
       }
@@ -322,11 +323,13 @@ const appEvent = {
         info.message = "成功！"
         info.data = filesArr
         event.sender.send(data.callback, info)
-      } catch (e) {
+      } catch (err) {
+        console.log(err)
         info.message = err
         event.sender.send(data.callback, info)
       }
     })
+
 
     // 读取文件内容
     ipc.on('readFileContent', async function(event, data) {

@@ -18,9 +18,11 @@ module.exports = {
       use: {
         loader: 'babel-loader',
         options: {
-          presets: ['react', 'env', 'es2015'],
+          presets: ['@babel/react', '@babel/env'],
           plugins: [
-            ["transform-class-properties", {"spec": true}]
+            ["@babel/proposal-class-properties", {"spec": true}],
+            // ["@babel/plugin-transform-async-to-generator"],
+            ["@babel/plugin-transform-runtime"]
           ]
         }
       }

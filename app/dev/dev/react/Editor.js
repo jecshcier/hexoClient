@@ -16,39 +16,15 @@ class Editor extends React.Component {
     this.state = {
       modal: null
     }
-    this.values = ''
-    this.message = '保存成功！'
   }
 
   componentDidMount = () => {
     console.log("============cm=============")
-    this.values = this.props.content
-
     console.log(this.props.content)
-    document.addEventListener("paste", (e) => {
-      e.preventDefault();
-      let cbd = e.clipboardData;
-      let item = cbd.items[0];
-      if (item.kind === "file") {
-        let blob = item.getAsFile();
-        console.log(blob);
-        if (!blob) {
-          return false;
-        }
-        window.URL = window.URL || window.webkitURL;
-        let blobUrl = window.URL.createObjectURL(blob);
-        this.setState({
-          modal: 'loadC',
-          clipboardImgUrl: blobUrl,
-          clipboardImg: blob
-        })
-      }
-    })
   }
 
   changeContent = (editor, data, value) => {
     this.props.changeContent(editor, data, value)
-    this.values = value
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -86,6 +62,7 @@ class Editor extends React.Component {
       modal: null
     })
   }
+
   loadClipboardImg = () => {
     this.setState({
       modal: null
@@ -136,6 +113,27 @@ class Editor extends React.Component {
           }}
           onKeyPress={(editor, event) => {
             console.log(event)
+          }}
+          onPaste={(editor,e)=>{
+            e.preventDefault();
+            let cbd = e.clipboardData;
+            let item = cbd.items[0];
+            if (item.kind === "file") {
+              let blob = item.getAsFile();
+              console.log(blob);
+              if (!blob) {
+                return false;
+              }
+              window.URL = window.URL || window.webkitURL;
+              let blobUrl = window.URL.createObjectURL(blob);
+              this.setState({
+                modal: 'loadC',
+                clipboardImgUrl: blobUrl,
+                clipboardImg: blob
+              })
+            }else if(item.kind === "string"){
+              editor.replaceSelection(cbd.getData('Text'))
+            }
           }}
           onDrop={(editor, event) => {
             console.log("=================drop==============")

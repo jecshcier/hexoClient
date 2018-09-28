@@ -1,5 +1,5 @@
 import React from "react";
-import {Tree, Button, Radio, Icon, Tag, Modal, Input, Select} from 'antd';
+import {message, Button, Radio, Icon, Tag, Modal, Input, Select} from 'antd';
 import _ from 'lodash'
 
 import 'antd/lib/modal/style/css'
@@ -18,58 +18,14 @@ class AddArticle extends React.Component {
     this.textInput = React.createRef()
     this.state = {
       value: '',
-      sortArr: null,
-      tagsArr: null,
       currentSort: null,
-      currentTag: []
+      currentTag: [],
+      currentKeywords:[]
     }
     this.tagColorArr = ["pink", "red", "orange", "green", "cyan", "blue", "purple"]
   }
 
-  changeSortAndTagsArr = () => {
-    let tagsArr = []
-    let sortArr = []
-    let getInfoOk = false
-    app.once('getTagsCallback', (event, data) => {
-      if (data.flag) {
-        console.log(data.data)
-        tagsArr = data.data
-        if (getInfoOk) {
-          this.setState({
-            tagsArr: tagsArr,
-            sortArr: sortArr
-          })
-        }
-        getInfoOk = true
-      }
-    })
-    app.once('getSortsCallback', (event, data) => {
-      if (data.flag) {
-        console.log(data.data)
-        sortArr = data.data
-        if (getInfoOk) {
-          this.setState({
-            tagsArr: tagsArr,
-            sortArr: sortArr
-          })
-        }
-        getInfoOk = true
-      }
-    })
-    app.send('getFolders', {
-      callback: 'getTagsCallback',
-      dirPath: this.props.hexoRoot + '/source/tags',
-      type: 'tags'
-    })
-    app.send('getFolders', {
-      callback: 'getSortsCallback',
-      dirPath: this.props.hexoRoot + '/source/categories',
-      type: 'sorts'
-    })
-  }
-
   componentDidMount() {
-    this.changeSortAndTagsArr()
   }
 
   componentDidUpdate() {
@@ -87,16 +43,18 @@ class AddArticle extends React.Component {
       this.props.onOk({
         value: this.state.value,
         currentSort: this.state.currentSort,
-        currentTag: this.state.currentTag
+        currentTag: this.state.currentTag,
+        currentKeywords:this.state.currentKeywords
       })
       this.setState({
         value: '',
         currentSort: null,
-        currentTag: []
+        currentTag: [],
+        currentKeywords:[]
       })
     }
     else{
-      alert("信息不完整")
+      message.warning("信息不完整")
     }
   }
 
@@ -104,7 +62,8 @@ class AddArticle extends React.Component {
     this.setState({
       value: '',
       currentSort: null,
-      currentTag: []
+      currentTag: [],
+      currentKeywords:[]
     })
     this.props.closeModal()
   }
@@ -129,8 +88,24 @@ class AddArticle extends React.Component {
     let tags = this.state.currentTag.filter(tag=>tag !== tagName)
     this.setState({
       currentTag:tags
+    })
+  }
+
+  addKeywords = (e)=>{
+    let currentKeywords = this.state.currentKeywords
+    currentKeywords.push(e.target.getAttribute('data-name'))
+    this.setState({
+      currentKeywords: Array.from(new Set(currentKeywords))
+    })
+  }
+
+  delKeywords = (keyword) => {
+    console.log("删除tag")
+    let keywords = this.state.currentKeywords.filter(tag=>tag !== keyword)
+    this.setState({
+      currentKeywords:keywords
     },()=>{
-      console.log(this.state.currentTag)
+      console.log(this.state.currentKeywords)
     })
   }
 
@@ -142,6 +117,7 @@ class AddArticle extends React.Component {
 
 
   render() {
+    console.log(this.props)
     return <Modal
       title={this.props.modalName}
       visible={this.props.show}
@@ -152,8 +128,8 @@ class AddArticle extends React.Component {
              placeholder={this.props.placeholder}/>
       <Select defaultValue="请选择分类" style={{marginTop:'10px'}} onSelect={this.chooseSort}>
         {
-          this.state.sortArr ? Object.values(this.state.sortArr).map((el, index) => {
-            return <Option key={el.fileName} value={el.fileName}>{el.fileName}</Option>
+          this.props.sortArr.length ? Object.values(this.props.sortArr).map((el, index) => {
+            return <Option key={el} value={el}>{el}</Option>
           }) : null
         }
       </Select>
@@ -168,10 +144,27 @@ class AddArticle extends React.Component {
         </div>
         <div style={{marginTop:'10px'}}>
           {
-            this.state.tagsArr ? Object.values(this.state.tagsArr).map((el, index) => {
+            this.props.tagsArr.length ? Object.values(this.props.tagsArr).map((el, index) => {
               let colorNum = index % 7
-              return <Tag color={this.tagColorArr[colorNum]} data-name={el.fileName} key={el.fileName}
-                          onClick={this.addTags} value={el.fileName}>{el.fileName}</Tag>
+              return <Tag color={this.tagColorArr[colorNum]} data-name={el} key={el}
+                          onClick={this.addTags} value={el}>{el}</Tag>
+            }) : null
+          }
+        </div>
+        <div style={{marginTop:'10px'}}>
+          <span>关键词</span>
+          {
+            this.state.currentKeywords.length ? this.state.currentKeywords.map((el, index) => {
+              return <Tag style={index === 0 ? {marginLeft:'5px'}:null} closable data-name={el} afterClose={()=>{this.delKeywords(el)}} key={el} value={el}>{el}</Tag>
+            }) : null
+          }
+        </div>
+        <div style={{marginTop:'10px'}}>
+          {
+            this.props.keywordsArr.length ? Object.values(this.props.keywordsArr).map((el, index) => {
+              let colorNum = index % 7
+              return <Tag color={this.tagColorArr[colorNum]} data-name={el} key={el}
+                          onClick={this.addKeywords} value={el}>{el}</Tag>
             }) : null
           }
         </div>
