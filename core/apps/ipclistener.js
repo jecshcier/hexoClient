@@ -24,6 +24,7 @@ const QRCode = require('qrcode')
 const util = require('util');
 const readdir = util.promisify(fs.readdir)
 const fsStat = util.promisify(fs.stat)
+const createServer_process = path.resolve(__dirname, './createServer.js')
 
 
 const appEvent = {
@@ -268,7 +269,7 @@ const appEvent = {
         data: null
       }
       try {
-        console.log('-->',dirPath)
+        console.log('-->', dirPath)
         let files = await readdir(dirPath)
         let filesArr = []
         await Promise.all(files.map(async (filename, index) => {
@@ -466,6 +467,91 @@ const appEvent = {
         info.message = err
         event.sender.send(data.callback, info);
       }
+    })
+
+    // 预览
+    ipc.on('preview', async (event, data) => {
+      let info = {
+        flag: false,
+        message: '',
+        data: null
+      }
+      child.exec('hexo clean && hexo g', {
+        cwd: data.url
+      }, (error, stdout, stderr) => {
+        if (error) {
+          console.log(error)
+          info.flag = false
+          info.message = error
+          event.sender.send(data.callback, info);
+        }
+        console.log(`stdout: ${stdout}`);
+        console.log(`stderr: ${stderr}`);
+        this.preview = child.fork(createServer_process, [], {})
+        this.preview.on('message', (m) => {
+          console.log(m)
+          if (m.err) {
+            info.message = err
+            event.sender.send(data.callback, info);
+          } else {
+            // cmd /c start http://blog.csdn.net/jiezhi2013
+            if (process.platform !== "darwin") {
+              child.exec('cmd /c start http://127.0.0.1:4000', {
+                cwd: data.url
+              }, (error, stdout, stderr) => {
+                info.flag = true
+                info.data = this.preview.pid
+                info.message = '预览服务已开启!'
+                event.sender.send(data.callback, info);
+              })
+            } else {
+              child.exec("open 'http://127.0.0.1:4000'", {
+                cwd: data.url
+              }, (error, stdout, stderr) => {
+                info.flag = true
+                info.data = this.preview.pid
+                info.message = '预览服务已开启!'
+                event.sender.send(data.callback, info);
+              })
+            }
+          }
+        })
+        this.preview.send({
+          port: 4000,
+          dir: path.normalize(data.url + '/public')
+        })
+      })
+    })
+
+    // 取消预览
+    ipc.on('cancel_preview', async (event, data) => {
+      this.preview.send({
+        kill: true
+      })
+    })
+
+    // 部署
+    ipc.on('deploy', async (event, data) => {
+      let info = {
+        flag: false,
+        message: '',
+        data: null
+      }
+      child.exec('hexo clean && hexo g && hexo d', {
+        cwd: data.url
+      }, (error, stdout, stderr) => {
+        if (error) {
+          console.log(error)
+          info.flag = false
+          info.message = error
+          event.sender.send(data.callback, info);
+        }
+        console.log(`stdout: ${stdout}`);
+        console.log(`stderr: ${stderr}`);
+        info.flag = true
+        info.message = '部署成功！'
+        event.sender.send(data.callback, info);
+      })
     })
 
 

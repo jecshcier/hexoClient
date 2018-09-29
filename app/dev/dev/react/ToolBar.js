@@ -180,6 +180,16 @@ class ToolBar extends React.Component {
     })
   }
 
+  deploy = ()=>{
+    app.on('deployCallback',(event, data)=>{
+      console.log(data)
+    })
+    app.send('deploy', {
+      callback: 'deployCallback',
+      url:this.props.rootDir
+    })
+  }
+
   render() {
     return (<div className="tool-bar">
       <div className="tools">
@@ -199,7 +209,7 @@ class ToolBar extends React.Component {
           <i className="fa fa-tags" aria-hidden="true" title="标签管理"></i>
           <span>标签管理</span>
         </span>
-        <span>
+        <span onClick={this.deploy}>
           <i className="fa fa-cloud-upload" aria-hidden="true" title="发布"></i>
           <span>发布</span>
         </span>

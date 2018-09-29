@@ -34,7 +34,8 @@ class Editor extends React.Component {
   }
 
   saveArticle = () => {
-    if (this.saveFlag){
+    console.log(this.saveFlag)
+    if (this.saveFlag) {
       return message.warning('保存中……请不要重复保存～')
     }
     if (!this.props.name) {
@@ -89,6 +90,45 @@ class Editor extends React.Component {
     reader.readAsDataURL(this.state.clipboardImg)
   }
 
+  preview = () => {
+    console.log(this.lock)
+    if(this.lock){
+      return false
+    }
+    if(!this.state.prevPid){
+      this.lock = true
+      const loading = message.loading('预览服务启动中……',0)
+      app.once('previewCallback', (event, data) => {
+        loading()
+        this.lock = false
+        if (data.flag) {
+          this.setState({
+            prevPid: data.data
+          })
+          message.success(data.message)
+        }
+        else{
+          message.error('预览失败')
+        }
+      })
+      app.send('preview', {
+        callback: 'previewCallback',
+        url: this.props.rootDir
+      })
+    }
+    else{
+      this.lock = true
+      app.send('cancel_preview', {})
+      this.setState({
+        prevPid:null
+      },()=>{
+        this.lock = false
+      })
+      message.success('取消预览成功！')
+    }
+
+  }
+
   render() {
     return (<div className="editor-view">
       <div>
@@ -111,10 +151,12 @@ class Editor extends React.Component {
           onChange={(editor, data, value) => {
             // this.changeContent(editor, data, value)
           }}
-          onKeyPress={(editor, event) => {
-            console.log(event)
+          onKeyUp={(editor, event) => {
+            if (event.ctrlKey && event.keyCode === 83) {
+              this.saveArticle()
+            }
           }}
-          onPaste={(editor,e)=>{
+          onPaste={(editor, e) => {
             e.preventDefault();
             let cbd = e.clipboardData;
             let item = cbd.items[0];
@@ -131,7 +173,7 @@ class Editor extends React.Component {
                 clipboardImgUrl: blobUrl,
                 clipboardImg: blob
               })
-            }else if(item.kind === "string"){
+            } else if (item.kind === "string") {
               editor.replaceSelection(cbd.getData('Text'))
             }
           }}
@@ -166,7 +208,9 @@ class Editor extends React.Component {
       <div className="editor-bar">
         <span>
           <i className="fa fa-eye" aria-hidden="true" title="预览"></i>
-          <span>预览</span>
+          <span onClick={this.preview}>{
+            this.state.prevPid ? '取消预览' : '预览'
+          }</span>
         </span>
         <span>
           <i className="fa fa-floppy-o" aria-hidden="true"></i>
