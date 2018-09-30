@@ -64,6 +64,15 @@ class ToolBar extends React.Component {
         message.error("数据解析错误")
       }
     }
+    else{
+      message.warning("未发现标签，请先编辑标签")
+      this.setState({
+        sortArr: sortArr,
+        tagsArr: tagsArr,
+        keywordsArr: keywordsArr,
+        modal: 'addA'
+      })
+    }
   }
 
   chooseHexoRoot = () => {
@@ -81,7 +90,7 @@ class ToolBar extends React.Component {
   }
 
   handleOk = (data) => {
-    let articleContent = `---\ntitle: ${data.value}\ncategories: ${data.currentSort}\ndate: ${moment().format("YYYY-MM-DD HH:mm:ss")}\ntags: [${data.currentTag}]\nkeywords: [${data.currentKeywords}]\n---`
+    let articleContent = `---\ntitle: ${data.value}\ncategories: ${data.currentSort}\ndate: ${moment().format("YYYY-MM-DD HH:mm:ss")}\ntags: [${data.currentTag}]\nkeywords: [${data.currentKeywords}]\n---\n\n\n<!-- more -->`
     app.once('createFileCallback', (event, data) => {
       if (data.flag) {
         this.props.reloadArticleArr(this.props.rootDir)
@@ -153,6 +162,15 @@ class ToolBar extends React.Component {
         message.error("数据解析错误")
       }
     }
+    else{
+      message.warning("未发现标签，请先编辑标签")
+      this.setState({
+        sortArr: sortArr,
+        tagsArr: tagsArr,
+        keywordsArr: keywordsArr,
+        modal: 'editT'
+      })
+    }
   }
 
   changeArr=(type,data)=>{
@@ -181,13 +199,25 @@ class ToolBar extends React.Component {
   }
 
   deploy = ()=>{
-    app.on('deployCallback',(event, data)=>{
-      console.log(data)
+    console.log(this.deploying)
+    if(this.deploying){
+      return false
+    }
+    this.deploying = true
+    app.once('deployCallback',(event, data)=>{
+      this.deploying = false
+      load()
+      if(data.flag){
+        message.success(data.message)
+      }else{
+        message.error(data.message)
+      }
     })
     app.send('deploy', {
       callback: 'deployCallback',
       url:this.props.rootDir
     })
+    let load = message.loading('正在部署中，请稍等……')
   }
 
   render() {

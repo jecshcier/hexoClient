@@ -537,7 +537,7 @@ const appEvent = {
         message: '',
         data: null
       }
-      child.exec('hexo clean && hexo g && hexo d', {
+      child.exec('hexo clean && hexo g', {
         cwd: data.url
       }, (error, stdout, stderr) => {
         if (error) {
@@ -548,10 +548,27 @@ const appEvent = {
         }
         console.log(`stdout: ${stdout}`);
         console.log(`stderr: ${stderr}`);
-        info.flag = true
-        info.message = '部署成功！'
-        event.sender.send(data.callback, info);
+        if (process.platform !== "darwin") {
+          child.exec(`start "cmd.exe" /d ${data.url} hexo d`, {
+            cwd: data.url
+          }, (error, stdout, stderr) => {
+            if (error) {
+              console.log(error)
+              info.flag = false
+              info.message = error
+              event.sender.send(data.callback, info);
+            }
+            console.log(`stdout: ${stdout}`);
+            console.log(`stderr: ${stderr}`);
+          })
+          info.flag = true
+          info.message = '开始部署，请按照终端命令提示操作～'
+          event.sender.send(data.callback, info);
+        } else {
+
+        }
       })
+
     })
 
 

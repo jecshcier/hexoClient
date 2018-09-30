@@ -21,7 +21,6 @@ module.exports = {
           presets: ['@babel/react', '@babel/env'],
           plugins: [
             ["@babel/proposal-class-properties", {"spec": true}],
-            // ["@babel/plugin-transform-async-to-generator"],
             ["@babel/plugin-transform-runtime"]
           ]
         }
@@ -39,7 +38,7 @@ module.exports = {
       filename: "js/lib/vender.bundle.js"
     }),
     new HtmlWebpackPlugin({
-      title: 'hollow',
+      title: 'hexo博客客户端',
       filename: 'index.html',
       template: path.join(__dirname, 'dev/templates/index.html'),
       hash: true,
