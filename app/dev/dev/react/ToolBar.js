@@ -244,7 +244,10 @@ class ToolBar extends React.Component {
           <span>发布</span>
         </span>
       </div>
-      <span>
+      <span title={this.props.rootDir ? this.props.rootDir : null} style={{maxWidth:'400px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap'}}>
         当前博客路径：{this.props.rootDir ? this.props.rootDir : null}
       </span>
       <AddArticle ref="groupModal"

@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import {Tree, Button, Radio, Icon, Modal, Input, message} from 'antd';
+import {Tree, Button, Radio, Icon, Modal, Input, message} from 'antd'
 import {Controlled as CodeMirror} from 'react-codemirror2'
 
 import 'codemirror/mode/markdown/markdown.js'
@@ -21,6 +21,7 @@ class Editor extends React.Component {
   componentDidMount = () => {
     console.log("============cm=============")
     console.log(this.props.content)
+
   }
 
   changeContent = (editor, data, value) => {
@@ -34,7 +35,6 @@ class Editor extends React.Component {
   }
 
   saveArticle = () => {
-    console.log(this.saveFlag)
     if (this.saveFlag) {
       return message.warning('保存中……请不要重复保存～')
     }
@@ -45,9 +45,9 @@ class Editor extends React.Component {
     app.once('createFileCallback', (event, data) => {
       this.saveFlag = false
       if (data.flag) {
-        message.success('保存成功');
+        message.success('保存成功')
       } else {
-        message.error(data.message);
+        message.error(data.message)
       }
     })
     app.send('createFile', {
@@ -78,7 +78,7 @@ class Editor extends React.Component {
           let url = `${window.localStorage.domain}/images/${_this.props.article}/${data.data}`
           _this.cm.replaceSelection(`![${data.data}](${url})\n`)
         } else {
-          message.error("图片储存失败！");
+          message.error("图片储存失败！")
         }
       })
       app.send('createImage', {
@@ -92,12 +92,12 @@ class Editor extends React.Component {
 
   preview = () => {
     console.log(this.lock)
-    if(this.lock){
+    if (this.lock) {
       return false
     }
-    if(!this.state.prevPid){
+    if (!this.state.prevPid) {
       this.lock = true
-      const loading = message.loading('预览服务启动中……',0)
+      const loading = message.loading('预览服务启动中……', 0)
       app.once('previewCallback', (event, data) => {
         loading()
         this.lock = false
@@ -107,7 +107,7 @@ class Editor extends React.Component {
           })
           message.success(data.message)
         }
-        else{
+        else {
           message.error('预览失败')
         }
       })
@@ -116,12 +116,12 @@ class Editor extends React.Component {
         url: this.props.rootDir
       })
     }
-    else{
+    else {
       this.lock = true
       app.send('cancel_preview', {})
       this.setState({
-        prevPid:null
-      },()=>{
+        prevPid: null
+      }, () => {
         this.lock = false
       })
       message.success('取消预览成功！')
@@ -152,22 +152,38 @@ class Editor extends React.Component {
             // this.changeContent(editor, data, value)
           }}
           onKeyUp={(editor, event) => {
-            if (event.ctrlKey && event.keyCode === 83) {
+            this.saved = false
+            if(window.os !== 'darwin'){
+              if (event.ctrlKey && event.keyCode === 83) {
+                this.saveArticle()
+              }
+            }
+          }}
+          onKeyDown={(editor, event) => {
+            if (event.metaKey && event.keyCode === 83) {
+              if (this.saved) {
+                return false
+              }
               this.saveArticle()
+              this.saved = true
             }
           }}
           onPaste={(editor, e) => {
-            e.preventDefault();
-            let cbd = e.clipboardData;
-            let item = cbd.items[0];
+            if (!window.localStorage.domain) {
+              message.error("请先配置域名！")
+              return false
+            }
+            e.preventDefault()
+            let cbd = e.clipboardData
+            let item = cbd.items[0]
             if (item.kind === "file") {
-              let blob = item.getAsFile();
-              console.log(blob);
+              let blob = item.getAsFile()
+              console.log(blob)
               if (!blob) {
-                return false;
+                return false
               }
-              window.URL = window.URL || window.webkitURL;
-              let blobUrl = window.URL.createObjectURL(blob);
+              window.URL = window.URL || window.webkitURL
+              let blobUrl = window.URL.createObjectURL(blob)
               this.setState({
                 modal: 'loadC',
                 clipboardImgUrl: blobUrl,
@@ -178,6 +194,10 @@ class Editor extends React.Component {
             }
           }}
           onDrop={(editor, event) => {
+            if (!window.localStorage.domain) {
+              message.error("请先配置域名！")
+              return false
+            }
             console.log("=================drop==============")
             console.log(event.dataTransfer.files)
             event.preventDefault()
@@ -192,6 +212,9 @@ class Editor extends React.Component {
                   if (data.flag) {
                     let url = `${window.localStorage.domain}/images/${this.props.article}/${el.name}`
                     editor.replaceSelection(`![${el.name}](${url})\n`)
+                  }
+                  else {
+                    message.error(data.message)
                   }
                 })
                 app.send('copyFile', {

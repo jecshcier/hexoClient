@@ -7,3 +7,4 @@
 
 // 挂载全局变量app，作为html调用app主函数的入口
 window.app = require('electron').ipcRenderer;
+window.os = process.platform

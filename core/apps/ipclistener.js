@@ -260,7 +260,7 @@ const appEvent = {
     })
 
     //获取文件夹下所有文件
-    ipc.on('getFolderFiles', async (event, data) => {
+    ipc.on('getFolderFiles', async(event, data) => {
       console.log("获取文件夹下所有文件")
       let dirPath = data.dirPath
       let info = {
@@ -272,7 +272,7 @@ const appEvent = {
         console.log('-->', dirPath)
         let files = await readdir(dirPath)
         let filesArr = []
-        await Promise.all(files.map(async (filename, index) => {
+        await Promise.all(files.map(async(filename, index) => {
           let truePath = path.join(dirPath, filename)
           let fileStat = await fsStat(truePath)
           if (fileStat.isFile()) {
@@ -296,7 +296,7 @@ const appEvent = {
     })
 
     //获取文件夹下所有文件夹
-    ipc.on('getFolders', async (event, data) => {
+    ipc.on('getFolders', async(event, data) => {
       console.log("获取文件夹下所有文件夹")
       let dirPath = data.dirPath
       let info = {
@@ -307,7 +307,7 @@ const appEvent = {
       try {
         let files = await readdir(dirPath)
         let filesArr = []
-        await Promise.all(files.map(async (filename, index) => {
+        await Promise.all(files.map(async(filename, index) => {
           let truePath = path.join(dirPath, filename)
           let fileStat = await fsStat(truePath)
           if (fileStat.isFile()) {
@@ -405,45 +405,47 @@ const appEvent = {
     })
 
     // 写文件
-    ipc.on('createFile', async (event, data) => {
-      let info = {
-        flag: false,
-        message: '',
-        data: null
-      }
-      let url = data.url
-      let content = data.content
-      try {
-        let data = await fs.outputFile(url, content)
-        info.message = "创建成功"
-        info.flag = true
-        event.sender.send(data.callback, info);
-      } catch (err) {
-        info.message = err
-        event.sender.send(data.callback, info);
-      }
-    })
-    // 复制文件
-    ipc.on('copyFile', async (event, data) => {
-      let info = {
-        flag: false,
-        message: '',
-        data: null
-      }
-      let url = data.url
-      let targetUrl = data.targetUrl
-      fs.ensureDir(targetUrl).then((result) => {
-        return fs.copy(url, targetUrl + '/' + data.name)
-      }).then((result) => {
-        info.message = "复制成功"
-        info.flag = true
-        event.sender.send(data.callback, info);
-      }).catch((err) => {
-        console.log(err)
+    ipc.on('createFile', async(event, data) => {
+        let info = {
+          flag: false,
+          message: '',
+          data: null
+        }
+        let url = data.url
+        let content = data.content
+        try {
+          let data = await fs.outputFile(url, content)
+          info.message = "创建成功"
+          info.flag = true
+          event.sender.send(data.callback, info);
+        } catch (err) {
+          info.message = err
+          event.sender.send(data.callback, info);
+        }
       })
-    })
-    // 生成图片
-    ipc.on('createImage', async (event, data) => {
+      // 复制文件
+    ipc.on('copyFile', async(event, data) => {
+        let info = {
+          flag: false,
+          message: '',
+          data: null
+        }
+        let url = data.url
+        let targetUrl = data.targetUrl
+        fs.ensureDir(targetUrl).then((result) => {
+          return fs.copy(url, targetUrl + '/' + data.name)
+        }).then((result) => {
+          info.message = "复制成功"
+          info.flag = true
+          event.sender.send(data.callback, info);
+        }).catch((err) => {
+          console.log(err)
+          info.message = "复制出错!"
+          event.sender.send(data.callback, info);
+        })
+      })
+      // 生成图片
+    ipc.on('createImage', async(event, data) => {
       let info = {
         flag: false,
         message: '',
@@ -470,7 +472,7 @@ const appEvent = {
     })
 
     // 预览
-    ipc.on('preview', async (event, data) => {
+    ipc.on('preview', async(event, data) => {
       let info = {
         flag: false,
         message: '',
@@ -524,14 +526,14 @@ const appEvent = {
     })
 
     // 取消预览
-    ipc.on('cancel_preview', async (event, data) => {
+    ipc.on('cancel_preview', async(event, data) => {
       this.preview.send({
         kill: true
       })
     })
 
     // 部署
-    ipc.on('deploy', async (event, data) => {
+    ipc.on('deploy', async(event, data) => {
       let info = {
         flag: false,
         message: '',
@@ -565,7 +567,26 @@ const appEvent = {
           info.message = '开始部署，请按照终端命令提示操作～'
           event.sender.send(data.callback, info);
         } else {
-
+          child.exec(`osascript <<EOF
+tell application "Terminal"
+do script "cd ${data.url} && hexo d"
+end tell
+EOF
+`, {
+            cwd: data.url
+          }, (error, stdout, stderr) => {
+            if (error) {
+              console.log(error)
+              info.flag = false
+              info.message = error
+              event.sender.send(data.callback, info);
+            }
+            console.log(`stdout: ${stdout}`);
+            console.log(`stderr: ${stderr}`);
+          })
+          info.flag = true
+          info.message = '开始部署，请按照终端命令提示操作～'
+          event.sender.send(data.callback, info);
         }
       })
 

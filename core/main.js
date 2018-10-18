@@ -17,27 +17,6 @@ const url = require('url')
 const ipclistener = require('./apps/ipclistener')
 const fs = require('fs')
 const config = require(path.resolve(__dirname, '../app/config'));
-const interceptUrlArr = ['youku.com/v_show', 'm.youku.com/video']
-
-const linesArr = ["http://yun.baiyug.cn/vip/index.php?url=",
-  "http://api.wlzhan.com/sudu/?url=",
-  "http://jx.598110.com/duo/index.php?url=",
-  "http://jiexi.071811.cc/jx2.php?url=",
-  "http://jqaaa.com/jq3/?url=&url=",
-  "http://api.xiaomil.com/a/index.php?url=",
-  "https://jiexi.071811.cc/jx2.php?url=",
-  "http://api.xiaomil.com/a/index.php?url=",
-  "http://api.pucms.com/?url=",
-  "http://api.baiyug.cn/vip/index.php?url=",
-  "https://api.flvsp.com/?url=",
-  "http://api.xfsub.com/index.php?url=",
-  "http://65yw.2m.vc/chaojikan.php?url=",
-  "http://www.82190555.com/index/qqvod.php?url=",
-  "http://vip.jlsprh.com/index.php?url=",
-  "http://2gty.com/apiurl/yun.php?url="
-]
-
-global.lineNum = 0
 
 // 若需要用到httpServer，则创建httpServer
 
@@ -96,7 +75,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  console.log()
   // 此处为了适应mac os的dock
   if (!win.isVisible()) {
     win.show()
@@ -107,36 +85,6 @@ app.on('before-quit', () => {
   win._closed = true
 })
 
-app.on('web-contents-created', (event, contents) => {
-  if (contents.getType() == 'webview') {
-    contents.on('will-navigate', (event, url) => {
-      for (var i = 0; i < interceptUrlArr.length; i++) {
-        if (url.indexOf(interceptUrlArr[i]) !== -1) {
-          console.log(url)
-          console.log(global.lineNum)
-          let win2 = new BrowserWindow({
-            minWidth: config.minWidth,
-            minHeight: config.minHeight,
-            width: config.width,
-            height: config.height,
-            title: config.title,
-            center: true,
-            fullscreen: config.fullscreen,
-            fullscreenable: config.fullscreenable
-          })
-          win2.loadURL(linesArr[global.lineNum] + url, {
-            "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A356 Safari/604.1"
-          })
-          if (process.platform !== 'darwin') {
-            win2.setMenu(null)
-          }
-          event.preventDefault()
-          break
-        }
-      }
-    })
-  }
-})
 
 // 全局键盘监听事件
 
