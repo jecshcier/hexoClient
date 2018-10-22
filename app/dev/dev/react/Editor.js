@@ -99,6 +99,7 @@ class Editor extends React.Component {
       this.lock = true
       const loading = message.loading('预览服务启动中……', 0)
       app.once('previewCallback', (event, data) => {
+        console.log(data)
         loading()
         this.lock = false
         if (data.flag) {

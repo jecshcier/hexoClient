@@ -1,4 +1,4 @@
-﻿/************************
+/************************
  * 渲染进程监听器              *
  * author: Shayne C     *
  * createTime: 2017.4.5 *
@@ -478,7 +478,7 @@ const appEvent = {
         message: '',
         data: null
       }
-      child.exec('hexo clean && hexo g', {
+      child.exec(`hexo clean && hexo g`, {
         cwd: data.url
       }, (error, stdout, stderr) => {
         if (error) {
@@ -486,44 +486,50 @@ const appEvent = {
           info.flag = false
           info.message = error
           event.sender.send(data.callback, info);
+          return false
         }
         console.log(`stdout: ${stdout}`);
         console.log(`stderr: ${stderr}`);
-        this.preview = child.fork(createServer_process, [], {})
-        this.preview.on('message', (m) => {
-          console.log(m)
-          if (m.err) {
-            info.message = err
-            event.sender.send(data.callback, info);
-          } else {
-            // cmd /c start http://blog.csdn.net/jiezhi2013
-            if (process.platform !== "darwin") {
-              child.exec('cmd /c start http://127.0.0.1:4000', {
-                cwd: data.url
-              }, (error, stdout, stderr) => {
-                info.flag = true
-                info.data = this.preview.pid
-                info.message = '预览服务已开启!'
-                event.sender.send(data.callback, info);
-              })
-            } else {
-              child.exec("open 'http://127.0.0.1:4000'", {
-                cwd: data.url
-              }, (error, stdout, stderr) => {
-                info.flag = true
-                info.data = this.preview.pid
-                info.message = '预览服务已开启!'
-                event.sender.send(data.callback, info);
-              })
-            }
-          }
-        })
-        this.preview.send({
-          port: 4000,
-          dir: path.normalize(data.url + '/public')
-        })
+        createPreview(this, event, info, data)
       })
+
     })
+
+    function createPreview(_this, event, info, data) {
+      _this.preview = child.fork(createServer_process, [], {})
+      _this.preview.on('message', (m) => {
+        console.log(m)
+        if (m.err) {
+          info.message = err
+          event.sender.send(data.callback, info);
+        } else {
+          // cmd /c start http://blog.csdn.net/jiezhi2013
+          if (process.platform !== "darwin") {
+            child.exec('cmd /c start http://127.0.0.1:4000', {
+              cwd: data.url
+            }, (error, stdout, stderr) => {
+              info.flag = true
+              info.data = _this.preview.pid
+              info.message = '预览服务已开启!'
+              event.sender.send(data.callback, info);
+            })
+          } else {
+            child.exec("open 'http://127.0.0.1:4000'", {
+              cwd: data.url
+            }, (error, stdout, stderr) => {
+              info.flag = true
+              info.data = _this.preview.pid
+              info.message = '预览服务已开启!'
+              event.sender.send(data.callback, info);
+            })
+          }
+        }
+      })
+      _this.preview.send({
+        port: 4000,
+        dir: path.normalize(data.url + '/public')
+      })
+    }
 
     // 取消预览
     ipc.on('cancel_preview', async(event, data) => {
@@ -539,18 +545,19 @@ const appEvent = {
         message: '',
         data: null
       }
-      child.exec('hexo clean && hexo g', {
-        cwd: data.url
-      }, (error, stdout, stderr) => {
-        if (error) {
-          console.log(error)
-          info.flag = false
-          info.message = error
-          event.sender.send(data.callback, info);
-        }
-        console.log(`stdout: ${stdout}`);
-        console.log(`stderr: ${stderr}`);
-        if (process.platform !== "darwin") {
+      if (process.platform !== 'darwin') {
+        child.exec(`hexo clean && hexo g`, {
+          cwd: data.url
+        }, (error, stdout, stderr) => {
+          if (error) {
+            console.log(error)
+            info.flag = false
+            info.message = error
+            event.sender.send(data.callback, info);
+            return false
+          }
+          console.log(`stdout: ${stdout}`);
+          console.log(`stderr: ${stderr}`);
           child.exec(`start "cmd.exe" /d ${data.url} hexo d`, {
             cwd: data.url
           }, (error, stdout, stderr) => {
@@ -559,6 +566,7 @@ const appEvent = {
               info.flag = false
               info.message = error
               event.sender.send(data.callback, info);
+              return false
             }
             console.log(`stdout: ${stdout}`);
             console.log(`stderr: ${stderr}`);
@@ -566,30 +574,31 @@ const appEvent = {
           info.flag = true
           info.message = '开始部署，请按照终端命令提示操作～'
           event.sender.send(data.callback, info);
-        } else {
-          child.exec(`osascript <<EOF
+        })
+      } else {
+        child.exec(`osascript <<EOF
 tell application "Terminal"
-do script "cd ${data.url} && hexo d"
+activate
+do script "cd ${data.url} && hexo clean && hexo g && hexo d && exit"
 end tell
 EOF
 `, {
-            cwd: data.url
-          }, (error, stdout, stderr) => {
-            if (error) {
-              console.log(error)
-              info.flag = false
-              info.message = error
-              event.sender.send(data.callback, info);
-            }
-            console.log(`stdout: ${stdout}`);
-            console.log(`stderr: ${stderr}`);
-          })
-          info.flag = true
-          info.message = '开始部署，请按照终端命令提示操作～'
-          event.sender.send(data.callback, info);
-        }
-      })
-
+          cwd: data.url
+        }, (error, stdout, stderr) => {
+          if (error) {
+            console.log(error)
+            info.flag = false
+            info.message = error
+            event.sender.send(data.callback, info);
+            return false
+          }
+          console.log(`stdout: ${stdout}`);
+          console.log(`stderr: ${stderr}`);
+        })
+        info.flag = true
+        info.message = '开始部署，请按照终端命令提示操作～'
+        event.sender.send(data.callback, info);
+      }
     })
 
 

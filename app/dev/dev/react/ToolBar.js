@@ -206,6 +206,7 @@ class ToolBar extends React.Component {
     this.deploying = true
     app.once('deployCallback',(event, data)=>{
       this.deploying = false
+      console.log(data)
       load()
       if(data.flag){
         message.success(data.message)
