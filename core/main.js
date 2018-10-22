@@ -10,7 +10,7 @@ const {
   globalShortcut,
   BrowserWindow,
   session,
-  shell
+  shell, Menu
 } = require('electron')
 const path = require('path')
 const url = require('url')
@@ -96,6 +96,10 @@ function registerShortcut() {
     win.webContents.toggleDevTools()
   })
 
+  globalShortcut.register('Command+Q', () => {
+    app.quit()
+  })
+
   // 全屏
 
   globalShortcut.register('F11', () => {
@@ -125,6 +129,49 @@ function createWindow(option, defaultUrl) {
 
   if (process.platform !== 'darwin') {
     mainWindow.setMenu(null)
+  } else {
+    let template = [{
+      label: 'hexoClient',
+      submenu: [{
+        label: '退出',
+        accelerator: 'CmdOrCtrl+Q',
+        role: 'exit'
+      }]
+    },{
+      label: '操作',
+      submenu: [{
+        label: '复制',
+        accelerator: 'CmdOrCtrl+C',
+        role: 'copy'
+      }, {
+        label: '粘贴',
+        accelerator: 'CmdOrCtrl+V',
+        role: 'paste'
+      }]
+    }, {
+      label: '窗口',
+      role: 'window',
+      submenu: [{
+        label: '最小化',
+        accelerator: 'CmdOrCtrl+M',
+        role: 'minimize'
+      }, {
+        label: '关闭',
+        accelerator: 'CmdOrCtrl+W',
+        role: 'close'
+      }]
+    }, {
+      label: '帮助',
+      role: 'help',
+      submenu: [{
+        label: '作者',
+        click: function() {
+          shell.openExternal('https://blog.cshayne.cn')
+        }
+      }]
+    }]
+    const menu = Menu.buildFromTemplate(template)
+    Menu.setApplicationMenu(menu) // 设置菜单部分
   }
 
   // 监听窗口关闭事件
@@ -135,14 +182,14 @@ function createWindow(option, defaultUrl) {
       return;
     }
     mainWindow = null
-    // console.log(mainWindow)
-    // // 如果是mac，则关闭即为隐藏
-    // if (process.platform === 'darwin') {
-    //     mainWindow.hide()
-    // }
-    // else{
-    //     mainWindow = null
-    // }
+      // console.log(mainWindow)
+      // // 如果是mac，则关闭即为隐藏
+      // if (process.platform === 'darwin') {
+      //     mainWindow.hide()
+      // }
+      // else{
+      //     mainWindow = null
+      // }
   })
 
   mainWindow.on('closed', (event) => {
